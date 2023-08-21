@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use Illuminate\Support\Arr;
 use App\Models\User;
 use App\Models\Post;
 use Illuminate\Foundation\Testing\DatabaseMigrations;

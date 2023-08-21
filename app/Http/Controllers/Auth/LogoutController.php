@@ -21,7 +21,6 @@ class LogoutController extends Controller
      */
     public function __invoke(Request $request)
     {
-        // Logout to all devices
         $request->user()->tokens()->delete();
 
         return response()->noContent();

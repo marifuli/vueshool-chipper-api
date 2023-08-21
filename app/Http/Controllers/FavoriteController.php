@@ -3,12 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Models\Post;
-use App\Models\Favorite;
 use Illuminate\Http\Request;
 use App\Http\Requests\CreateFavoriteRequest;
-use App\Http\Requests\DestroyFavoriteRequest;
 use Illuminate\Http\Response;
 
+/**
+ * @group Favorites
+ *
+ * API endpoints for managing favorites
+ */
 class FavoriteController extends Controller
 {
     public function index(Request $request)

@@ -9,6 +9,11 @@ use App\Http\Requests\CreatePostRequest;
 use App\Http\Requests\UpdatePostRequest;
 use App\Http\Requests\DestroyPostRequest;
 
+/**
+ * @group Posts
+ *
+ * API endpoints for managing posts
+ */
 class PostController extends Controller
 {
     public function index()
