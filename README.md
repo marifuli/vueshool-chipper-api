@@ -35,7 +35,7 @@ Please invest some time in acquainting yourself with the codebase, including Mod
 
 Duplicate the `.env.example` file as `.env` and edit the lines related to the database connection. You'll need to create a local MySQL database, you can call it "chipper". Then you can install dependencies and seed the database by running `composer install && php artisan migrate:fresh --seed`.
 
-Upload this code to a PRIVATE repository in GitHub. Invite the user [nicodevs](https://github.com/nicodevs/) to it.
+Upload this code to a PRIVATE repository in GitHub. Invite the user [harlekoy](https://github.com/harlekoy/) to it.
 
 ![Image](https://i.imgur.com/wxemxjk.png)
 
