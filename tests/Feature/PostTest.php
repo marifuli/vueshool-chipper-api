@@ -33,7 +33,9 @@ class PostTest extends TestCase
         $response->assertCreated()
             ->assertJsonStructure([
                 'data' => [
-                    'id', 'title', 'body',
+                    'id',
+                    'title',
+                    'body',
                 ]
             ])
             ->assertJson([
@@ -110,19 +112,19 @@ class PostTest extends TestCase
     {
         $user = User::factory()->create();
 
-        $response = $this->actingAs($user)->postJson(route('posts.store'), [
+        // Create a post directly in the database
+        $post = \App\Models\Post::factory()->create([
+            'user_id' => $user->id,
             'title' => 'My title',
             'body' => 'My body.',
         ]);
 
-        $id = Arr::get($response->json(), 'data.id');
-
-        $response = $this->actingAs($user)->deleteJson(route('posts.destroy', ['post' => $id]));
+        $response = $this->actingAs($user)->deleteJson(route('posts.destroy', ['post' => $post->id]));
 
         $response->assertNoContent();
 
         $this->assertDatabaseMissing('posts', [
-            'id' => $id,
+            'id' => $post->id,
         ]);
     }
 }

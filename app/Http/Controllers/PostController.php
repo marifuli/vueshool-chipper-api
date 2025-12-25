@@ -7,6 +7,7 @@ use App\Models\Post;
 use App\Http\Requests\CreatePostRequest;
 use App\Http\Requests\UpdatePostRequest;
 use App\Http\Requests\DestroyPostRequest;
+use App\Services\NotificationService;
 
 /**
  * @group Posts
@@ -21,7 +22,7 @@ class PostController extends Controller
         return PostResource::collection($posts);
     }
 
-    public function store(CreatePostRequest $request)
+    public function store(CreatePostRequest $request, NotificationService $notificationService)
     {
         $user = $request->user();
 
@@ -31,6 +32,11 @@ class PostController extends Controller
             'body' => $request->input('body'),
             'user_id' => $user->id,
         ]);
+
+        // Dispatch notification job asynchronously
+        dispatch(function () use ($post, $notificationService) {
+            $notificationService->notifyUsersAboutNewPost($post);
+        })->afterResponse();
 
         return new PostResource($post);
     }
@@ -52,8 +58,8 @@ class PostController extends Controller
 
     public function destroy(DestroyPostRequest $request, Post $post)
     {
-        $post->delete();
         $post->favorites()->delete();
+        $post->delete();
         return response()->noContent();
     }
 }
