@@ -8,6 +8,7 @@ use App\Http\Requests\CreatePostRequest;
 use App\Http\Requests\UpdatePostRequest;
 use App\Http\Requests\DestroyPostRequest;
 use App\Services\NotificationService;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * @group Posts
@@ -26,12 +27,22 @@ class PostController extends Controller
     {
         $user = $request->user();
 
-        // Create a new post
-        $post = Post::create([
+        // Initialize post data
+        $postData = [
             'title' => $request->input('title'),
             'body' => $request->input('body'),
             'user_id' => $user->id,
-        ]);
+        ];
+
+        // Handle image upload if present
+        if ($request->hasFile('image')) {
+            $image = $request->file('image');
+            $imagePath = $image->store('post-images', 'public');
+            $postData['image_path'] = $imagePath;
+        }
+
+        // Create a new post
+        $post = Post::create($postData);
 
         // Dispatch notification job asynchronously
         dispatch(function () use ($post, $notificationService) {

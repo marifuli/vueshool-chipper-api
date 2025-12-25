@@ -5,6 +5,8 @@ namespace Tests\Feature;
 use Illuminate\Support\Arr;
 use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class PostTest extends TestCase
@@ -49,6 +51,52 @@ class PostTest extends TestCase
             'title' => 'Test Post',
             'body' => 'This is a test post.',
         ]);
+    }
+
+    public function test_a_user_can_create_a_post_with_image()
+    {
+        Storage::fake('public');
+
+        $user = User::factory()->create();
+        $image = UploadedFile::fake()->image('post-image.jpg');
+
+        $response = $this->actingAs($user)->postJson(route('posts.store'), [
+            'title' => 'Test Post with Image',
+            'body' => 'This is a test post with an image.',
+            'image' => $image,
+        ]);
+
+        $response->assertCreated()
+            ->assertJsonStructure([
+                'data' => [
+                    'id',
+                    'title',
+                    'body',
+                    'image_url',
+                ]
+            ])
+            ->assertJson([
+                'data' => [
+                    'title' => 'Test Post with Image',
+                    'body' => 'This is a test post with an image.',
+                ]
+            ]);
+
+        $this->assertDatabaseHas('posts', [
+            'title' => 'Test Post with Image',
+            'body' => 'This is a test post with an image.',
+        ]);
+
+        // Get the image path from the response
+        $imagePath = Arr::get($response->json(), 'data.image_url');
+        $this->assertNotNull($imagePath, 'Image URL should not be null');
+
+        // Extract the filename from the full URL
+        $pathParts = explode('/', $imagePath);
+        $filename = end($pathParts);
+
+        // Verify the file exists in storage
+        $this->assertTrue(Storage::disk('public')->exists('post-images/' . basename($imagePath)));
     }
 
     public function test_a_user_can_update_a_post()
