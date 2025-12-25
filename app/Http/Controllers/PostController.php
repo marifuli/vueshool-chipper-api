@@ -53,7 +53,7 @@ class PostController extends Controller
     public function destroy(DestroyPostRequest $request, Post $post)
     {
         $post->delete();
-
+        $post->favorites()->delete();
         return response()->noContent();
     }
 }

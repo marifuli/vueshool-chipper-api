@@ -3,9 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\Post;
+use App\Models\User;
 use Illuminate\Http\Request;
-use App\Http\Requests\CreateFavoriteRequest;
+use App\Http\Requests\CreatePostFavoriteRequest;
+use App\Http\Requests\DestroyPostFavoriteRequest;
+use App\Http\Requests\CreateUserFavoriteRequest;
+use App\Http\Requests\DestroyUserFavoriteRequest;
 use Illuminate\Http\Response;
+use App\Http\Resources\FavoriteResource;
 
 /**
  * @group Favorites
@@ -20,16 +25,87 @@ class FavoriteController extends Controller
         return FavoriteResource::collection($favorites);
     }
 
-    public function store(CreateFavoriteRequest $request, Post $post)
+    public function storePostFavorite(CreatePostFavoriteRequest $request, Post $post)
     {
-        $request->user()->favorites()->create(['post_id' => $post->id]);
+        $user = $request->user();
 
-        return response()->noContent(Response::HTTP_CREATED);
+        // Check if favorite already exists
+        $favorite = $user->favorites()
+            ->where('favoritable_type', Post::class)
+            ->where('favoritable_id', $post->id)
+            ->first();
+
+        if ($favorite) {
+            return response()->json([
+                'message' => 'Post already favorited'
+            ], 409);
+        }
+
+        // Create new favorite
+        $favorite = $user->favorites()->create([
+            'favoritable_type' => Post::class,
+            'favoritable_id' => $post->id,
+            'post_id' => $post->id, // backward compatibility
+        ]);
+
+        return new FavoriteResource($favorite);
     }
 
-    public function destroy(Request $request, Post $post)
+    public function destroyPostFavorite(DestroyPostFavoriteRequest $request, Post $post)
     {
-        $favorite = $request->user()->favorites()->where('post_id', $post->id)->firstOrFail();
+        $user = $request->user();
+
+        // Find favorite
+        $favorite = $user->favorites()
+            ->where('favoritable_type', Post::class)
+            ->where('favoritable_id', $post->id) // corrected from 'id'
+            ->first();
+
+        if (! $favorite) {
+            return response()->json([
+                'message' => 'Favorite not found'
+            ], 404);
+        }
+
+        $favorite->delete();
+
+        return response()->noContent();
+    }
+
+    public function storeUserFavorite(CreateUserFavoriteRequest $request, User $user)
+    {
+        $authUser = $request->user();
+
+        $favorite = $authUser->favorites()
+            ->where('favoritable_type', User::class)
+            ->where('favoritable_id', $user->id)
+            ->first();
+
+        if ($favorite) {
+            return response()->json([
+                'message' => 'User already favorited'
+            ], 409);
+        }
+
+        $favorite = $authUser->favorites()->create([
+            'favoritable_type' => User::class,
+            'favoritable_id' => $user->id,
+            'post_id' => null,
+        ]);
+
+        return new FavoriteResource($favorite);
+    }
+
+    public function destroyUserFavorite(DestroyUserFavoriteRequest $request, User $user)
+    {
+        $favorite = $request->user()->favorites()
+            ->where('favoritable_type', User::class)
+            ->where('favoritable_id', $user->id)
+            ->first();
+
+        if (! $favorite) {
+            return response()->json(['message' => 'Favorite not found'], 404);
+        }
 
         $favorite->delete();
 

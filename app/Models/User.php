@@ -7,6 +7,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class User extends Authenticatable
 {
@@ -45,6 +46,7 @@ class User extends Authenticatable
         'password' => 'hashed',
     ];
 
+    // User AS ACTOR (what I favorite)
     public function favorites(): HasMany
     {
         return $this->hasMany(Favorite::class);
@@ -53,5 +55,25 @@ class User extends Authenticatable
     public function posts(): HasMany
     {
         return $this->hasMany(Post::class);
+    }
+
+    // User AS TARGET (who favorited me)
+    public function favoritedBy(): MorphMany
+    {
+        return $this->morphMany(Favorite::class, 'favoritable');
+    }
+
+    // Helper method to get users that this user has favorited
+    public function favoritedUsers()
+    {
+        return $this->belongsToMany(User::class, 'favorites', 'user_id', 'favoritable_id')
+            ->where('favorites.favoritable_type', 'App\\Models\\User');
+    }
+
+    // Helper method to get posts that this user has favorited
+    public function favoritedPosts()
+    {
+        return $this->belongsToMany(Post::class, 'favorites', 'user_id', 'favoritable_id')
+            ->where('favorites.favoritable_type', 'App\\Models\\Post');
     }
 }
