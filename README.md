@@ -158,6 +158,25 @@ The JSON file will always follow this structure: https://jsonplaceholder.typicod
 
 Ensure that the corresponsing tests are provided for this feature.
 
+### Import Users Command Usage
+
+The command has been implemented and can be used as follows:
+
+```bash
+php artisan users:import {url} {limit=10}
+```
+
+Parameters:
+- `url`: The URL of the JSON file containing user data (required)
+- `limit`: Maximum number of users to import (optional, defaults to 10)
+
+Example:
+```bash
+php artisan users:import https://jsonplaceholder.typicode.com/users 5
+```
+
+This will import up to 5 users from the specified URL. The command handles validation, error cases, and skips users that already exist in the database (based on email).
+
 ✋ **BEFORE YOU BEGIN**
 
 > Please update the following line in this `README.md` file to include your estimate of the time required for completion.
