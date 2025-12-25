@@ -21,8 +21,19 @@ class FavoriteController extends Controller
 {
     public function index(Request $request)
     {
-        $favorites = $request->user()->favorites;
-        return FavoriteResource::collection($favorites);
+        $user = $request->user();
+        $favoritedPosts = FavoriteResource::collection(
+            $user->favorites()->where('favoritable_type', Post::class)->get()
+        );
+        $favoritedUsers = FavoriteResource::collection(
+            $user->favorites()->where('favoritable_type', User::class)->get()
+        );
+        return response()->json([
+            'data' => [
+                'posts' => $favoritedPosts,
+                'users' => $favoritedUsers
+            ]
+        ]);
     }
 
     public function storePostFavorite(CreatePostFavoriteRequest $request, Post $post)
@@ -90,7 +101,6 @@ class FavoriteController extends Controller
         $favorite = $authUser->favorites()->create([
             'favoritable_type' => User::class,
             'favoritable_id' => $user->id,
-            'post_id' => null,
         ]);
 
         return new FavoriteResource($favorite);

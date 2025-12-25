@@ -11,7 +11,9 @@ return new class() extends Migration {
     public function up(): void
     {
         Schema::table('favorites', function (Blueprint $table) {
-            $table->unsignedBigInteger('post_id')->nullable()->change();
+            $table->unsignedBigInteger('post_id')->nullable()
+                ->default(null)
+                ->change();
         });
     }
 

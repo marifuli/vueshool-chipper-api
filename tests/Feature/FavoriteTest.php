@@ -253,4 +253,124 @@ class FavoriteTest extends TestCase
         $this->assertCount(1, $favoritedUsers);
         $this->assertEquals($userToFavorite->id, $favoritedUsers->first()->id);
     }
+
+    /* ===== FAVORITES INDEX TESTS ===== */
+
+    public function test_favorites_index_returns_posts_and_users()
+    {
+        $user = User::factory()->create();
+        $postAuthor = User::factory()->create(['name' => 'Jack']);
+        $post = Post::factory()->for($postAuthor, 'user')->create([
+            'title' => 'All about cats',
+            'body' => 'Lorem Ipsum...'
+        ]);
+
+        $userToFavorite1 = User::factory()->create(['name' => 'Jane']);
+        $userToFavorite2 = User::factory()->create(['name' => 'Luke']);
+
+        // Create another post by a different author
+        $anotherAuthor = User::factory()->create(['name' => 'Zara']);
+        $anotherPost = Post::factory()->for($anotherAuthor, 'user')->create([
+            'title' => 'All about dogs',
+            'body' => 'Lorem Ipsum...'
+        ]);
+
+        // Favorite posts and users
+        $this->actingAs($user)
+            ->postJson(route('favorites.post.store', $post))
+            ->assertCreated();
+
+        $this->actingAs($user)
+            ->postJson(route('favorites.post.store', $anotherPost))
+            ->assertCreated();
+
+        $this->actingAs($user)
+            ->postJson(route('favorites.user.store', $userToFavorite1))
+            ->assertCreated();
+
+        $this->actingAs($user)
+            ->postJson(route('favorites.user.store', $userToFavorite2))
+            ->assertCreated();
+
+        $this->actingAs($user)
+            ->postJson(route('favorites.user.store', $postAuthor))
+            ->assertCreated();
+
+        // Test the favorites index endpoint
+        $response = $this->actingAs($user)
+            ->getJson(route('favorites.index'))
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    'posts' => [
+                        '*' => ['id', 'title', 'body', 'user' => ['id', 'name']]
+                    ],
+                    'users' => [
+                        '*' => ['id', 'name']
+                    ]
+                ]
+            ]);
+
+        // Assert specific content for posts
+        $response->assertJson([
+            'data' => [
+                'posts' => [
+                    [
+                        'title' => 'All about cats',
+                        'user' => ['name' => 'Jack']
+                    ],
+                    [
+                        'title' => 'All about dogs',
+                        'user' => ['name' => 'Zara']
+                    ]
+                ]
+            ]
+        ]);
+
+        // Assert users are present but don't rely on specific order
+        $response->assertJsonFragment(['name' => 'Jack']);
+        $response->assertJsonFragment(['name' => 'Jane']);
+        $response->assertJsonFragment(['name' => 'Luke']);
+
+        // Assert we have the correct number of items
+        $responseData = $response->json('data');
+        $this->assertCount(2, $responseData['posts']);
+        $this->assertCount(3, $responseData['users']);
+    }
+
+    public function test_favorites_index_maintains_backward_compatibility()
+    {
+        $user = User::factory()->create();
+        $post = Post::factory()->create();
+        $userToFavorite = User::factory()->create();
+
+        // Create favorites
+        $this->actingAs($user)
+            ->postJson(route('favorites.post.store', $post))
+            ->assertCreated();
+
+        $this->actingAs($user)
+            ->postJson(route('favorites.user.store', $userToFavorite))
+            ->assertCreated();
+
+        // Get the favorites directly from the database to compare
+        $favorites = $user->favorites()->get();
+        $this->assertCount(2, $favorites);
+
+        // Get the response from the API
+        $response = $this->actingAs($user)
+            ->getJson(route('favorites.index'))
+            ->assertOk();
+
+        // Verify the response contains the correct number of items
+        $responseData = $response->json('data');
+        $this->assertCount(1, $responseData['posts']);
+        $this->assertCount(1, $responseData['users']);
+
+        // Verify the post ID matches
+        $this->assertEquals($post->id, $responseData['posts'][0]['id']);
+
+        // Verify the user ID matches
+        $this->assertEquals($userToFavorite->id, $responseData['users'][0]['id']);
+    }
 }
