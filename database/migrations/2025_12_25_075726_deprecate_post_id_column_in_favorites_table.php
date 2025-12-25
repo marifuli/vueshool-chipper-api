@@ -20,6 +20,11 @@ return new class() extends Migration {
      */
     public function down(): void
     {
+        // Remove user favorites (they don't have post_id) before making post_id NOT NULL
+        \Illuminate\Support\Facades\DB::table('favorites')
+            ->whereNull('post_id')
+            ->delete();
+
         Schema::table('favorites', function (Blueprint $table) {
             $table->unsignedBigInteger('post_id')->nullable(false)->change();
         });
